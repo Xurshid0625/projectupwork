@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer
+from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer, GoogleLoginSerializer
 from rest_framework.permissions import IsAuthenticated
 from .serializers import ForgotPasswordSerializer
 from django.contrib.auth import get_user_model
@@ -129,4 +129,13 @@ class ResetPasswordView(APIView):
 
         return Response({"message": "Password reset successful"}) 
     
+
+class GoogleLoginView(APIView):
+    def post(self, request):
+        serializer = GoogleLoginSerializer(data=request.data)
+
+        if serializer.is_valid():
+            return Response(serializer.validated_data)
+
+        return Response(serializer.errors, status=400)
 
