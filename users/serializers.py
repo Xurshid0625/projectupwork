@@ -3,7 +3,6 @@ from .models import User, Profile
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 User = get_user_model()
@@ -42,6 +41,9 @@ class LoginSerializer(serializers.Serializer):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise ValidationError("User not found")
+        
+        if not user.is_verified:
+            raise ValidationError("Email not verified")
 
         if not user.check_password(password):
             raise ValidationError("Invalid password")
