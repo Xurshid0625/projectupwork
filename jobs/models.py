@@ -98,3 +98,21 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.reviewer} -> {self.reviewee}"
+    
+class Favorite(models.Model):
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    job = models.ForeignKey('jobs.Job', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.user} - {self.job}"
+    
+class JobAlert(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    keyword = models.CharField(max_length=255)
+    location = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    
+class SavedCandidate(models.Model):
+    client = models.ForeignKey(User, on_delete=models.CASCADE)
+    freelancer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_by")

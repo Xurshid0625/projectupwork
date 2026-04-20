@@ -1,10 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Job, Proposal, Contract, Conversation
-from .serializers import JobSerializer, ProposalSerializer, ContractSerializer, MessageSerializer
+from .models import Job, Proposal, Contract, Conversation,Review, JobAlert, SavedCandidate
+from .serializers import JobSerializer, ProposalSerializer, ContractSerializer, MessageSerializer, ReviewSerializer
 from django.db import models
 from django.shortcuts import get_object_or_404
+from jobs.models import Favorite
 
 
 
@@ -79,6 +80,24 @@ class ApplyJobView(APIView):
             return Response(serializer.data, status=201)
 
         return Response(serializer.errors, status=400)
+    
+    
+class AppliedJobsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        proposals = Proposal.objects.filter(freelancer=request.user)
+
+        data = proposals.values(
+            "id",
+            "job__id",
+            "job__title",
+            "bid_amount",
+            "status",
+            "created_at"
+        )
+
+        return Response(data)
     
 class JobProposalsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -167,3 +186,156 @@ class MessageListView(APIView):
         messages = conversation.messages.all().order_by('created_at')
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
+    
+    
+class CreateReviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, contract_id):
+        contract = get_object_or_404(Contract, id=contract_id)
+
+        # ❗ faqat shu contract userlari yozadi
+        if request.user not in [contract.client, contract.freelancer]:
+            return Response({"error": "Not allowed"}, status=403)
+
+        # ❗ kim kimga yozmoqda
+        if request.user == contract.client:
+            reviewee = contract.freelancer
+        else:
+            reviewee = contract.client
+
+        # ❗ 2 marta yozmasin
+        if Review.objects.filter(contract=contract, reviewer=request.user).exists():
+            return Response({"error": "Already reviewed"}, status=400)
+
+        serializer = ReviewSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(
+                reviewer=request.user,
+                reviewee=reviewee,
+                contract=contract
+            )
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=400)
+    
+
+class DashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        applied_jobs = Proposal.objects.filter(freelancer=user).count()
+        contracts = Contract.objects.filter(freelancer=user).count()
+        favorites = Favorite.objects.filter(user=user).count()
+
+        return Response({
+            "applied_jobs": applied_jobs,
+            "contracts": contracts,
+            "favorites": favorites
+        })
+        
+
+class ToggleFavoriteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user = request.user
+        job = get_object_or_404(Job, pk=pk)
+
+        favorite = Favorite.objects.filter(user=user, job=job).first()
+
+        if favorite:
+            favorite.delete()
+            return Response({"message": "Removed from favorites"})
+        else:
+            Favorite.objects.create(user=user, job=job)
+            return Response({"message": "Added to favorites"})
+        
+class FavoriteJobsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        favorites = Favorite.objects.filter(user=request.user)
+
+        data = favorites.values(
+            "job__id",
+            "job__title"
+        )
+
+        return Response(data)
+    
+class JobAlertView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        alerts = JobAlert.objects.filter(user=request.user)
+        return Response([
+            {
+                "id": a.id,
+                "keyword": a.keyword,
+                "location": a.location
+            } for a in alerts
+        ])
+
+    def post(self, request):
+        alert = JobAlert.objects.create(
+            user=request.user,
+            keyword=request.data.get("keyword"),
+            location=request.data.get("location", "")
+        )
+        return Response({"message": "Alert created"})
+
+
+class SavedCandidateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        saved = SavedCandidate.objects.filter(client=request.user)
+
+        return Response([
+            {
+                "id": s.id,
+                "freelancer_id": s.freelancer.id,
+                "name": s.freelancer.username
+            } for s in saved
+        ])
+
+    def post(self, request):
+        freelancer_id = request.data.get("freelancer")
+
+        obj, created = SavedCandidate.objects.get_or_create(
+            client=request.user,
+            freelancer_id=freelancer_id
+        )
+
+        if not created:
+            return Response({"message": "Already saved"})
+
+        return Response({"message": "Saved"})
+
+
+class JobApplicationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, job_id):
+        job = get_object_or_404(Job, id=job_id)
+
+        # ❗ faqat job egasi ko‘ra oladi
+        if job.user != request.user:
+            return Response({"error": "Not allowed"}, status=403)
+
+        proposals = Proposal.objects.filter(job=job)
+
+        return Response([
+            {
+                "id": p.id,
+                "freelancer_id": p.freelancer.id,
+                "freelancer": p.freelancer.username,
+                "bid_amount": p.bid_amount,
+                "status": p.status,
+                "cover_letter": p.cover_letter
+            } for p in proposals
+        ])
