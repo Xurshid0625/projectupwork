@@ -1,1 +1,1 @@
-web: gunicorn projectupwork.wsgi
+web: gunicorn setting.wsgi
