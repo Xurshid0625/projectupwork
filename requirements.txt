@@ -9,6 +9,7 @@ Django==5.2.13
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
 google-auth==2.49.2
+gunicorn==25.3.0
 idna==3.11
 isort==8.0.1
 mypy_extensions==1.1.0
