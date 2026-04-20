@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Job, Proposal
+from .models import Job, Proposal, Contract, Message, Review
 
 class JobSerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,3 +13,20 @@ class ProposalSerializer(serializers.ModelSerializer):
         model = Proposal
         fields = '__all__'
         read_only_fields = ['freelancer', 'status', 'job']
+        
+class ContractSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contract
+        fields = '__all__'
+        
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = '__all__'
+        read_only_fields = ['sender','conversation']
+        
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'
+        read_only_fields = ['reviewer', 'reviewee', 'contract']

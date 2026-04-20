@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Job, Proposal
-from .serializers import JobSerializer, ProposalSerializer
+from .models import Job, Proposal, Contract, Conversation
+from .serializers import JobSerializer, ProposalSerializer, ContractSerializer, MessageSerializer
+from django.db import models
 from django.shortcuts import get_object_or_404
 
 
@@ -107,11 +108,62 @@ class ProposalActionView(APIView):
         if action == "accept":
             proposal.status = "accepted"
             proposal.save()
-            return Response({"message": "Accepted"})
+            
+            contract = Contract.objects.create(
+                job=proposal.job,
+                freelancer=proposal.freelancer,
+                client=proposal.job.user
+            )
+            
+            Conversation.objects.create(contract=contract)
+
+            return Response({"message": "Accepted, contract and chat created"})
 
         elif action == "reject":
-            proposal.status = "rejected"
-            proposal.save()
-            return Response({"message": "Rejected"})
+                proposal.status = "rejected"
+                proposal.save()
+                return Response({"message": "Rejected"})
 
         return Response({"error": "Invalid action"}, status=400)
+    
+class ContractView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        contracts = Contract.objects.filter(
+            models.Q(client=request.user) | models.Q(freelancer=request.user)
+        )
+
+        serializer = ContractSerializer(contracts, many=True)
+        return Response(serializer.data)
+    
+class SendMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, contract_id):
+        conversation = get_object_or_404(Conversation, contract_id=contract_id)
+
+        # ❗ faqat shu contract userlari yozishi mumkin
+        if request.user not in [conversation.contract.client, conversation.contract.freelancer]:
+            return Response({"error": "Not allowed"}, status=403)
+
+        serializer = MessageSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(
+                sender=request.user,
+                conversation=conversation
+            )
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=400)
+    
+class MessageListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, contract_id):
+        conversation = get_object_or_404(Conversation, contract_id=contract_id)
+
+        messages = conversation.messages.all().order_by('created_at')
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
