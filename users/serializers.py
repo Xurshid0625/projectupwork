@@ -1,16 +1,22 @@
-from rest_framework import serializers
-from .models import User, Profile
-from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import get_user_model
-from rest_framework.exceptions import ValidationError
-from google.oauth2 import id_token
+from django.contrib.auth import authenticate, get_user_model
 from google.auth.transport import requests
+from google.oauth2 import id_token
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
-User = get_user_model()
 
+from .models import (
+    Education,
+    Experience,
+    Notification,
+    Portfolio,
+    Profile,
+    Skill,
+    User,
+    UserSkill,
+)
+
+User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -18,18 +24,18 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password', 'full_name', 'role']
+        fields = ["email", "username", "password", "full_name", "role"]
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            email=validated_data['email'],
-            username=validated_data['username'],
-            password=validated_data['password'],
-            full_name=validated_data['full_name'],
-            role=validated_data['role']
+            email=validated_data["email"],
+            username=validated_data["username"],
+            password=validated_data["password"],
+            full_name=validated_data["full_name"],
+            role=validated_data["role"],
         )
         return user
-    
+
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -43,7 +49,7 @@ class LoginSerializer(serializers.Serializer):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise ValidationError("User not found")
-        
+
         if not user.is_verified:
             raise ValidationError("Email not verified")
 
@@ -57,30 +63,29 @@ class LoginSerializer(serializers.Serializer):
             "access": str(refresh.access_token),
             "refresh": str(refresh),
         }
-        
+
 
 class ProfileSerializer(serializers.ModelSerializer):
-     class Meta:
-         model = Profile
-         fields = '__all__'  
-         
+    class Meta:
+        model = Profile
+        fields = "__all__"
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     def validate(self, data):
-        if not User.objects.filter(email=data['email']).exists():
+        if not User.objects.filter(email=data["email"]).exists():
             raise serializers.ValidationError("User not found")
-        return data 
-    
-    
+        return data
+
+
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     new_password = serializers.CharField(min_length=6)
 
     def validate(self, data):
-        if not User.objects.filter(email=data['email']).exists():
+        if not User.objects.filter(email=data["email"]).exists():
             raise serializers.ValidationError("User not found")
         return data
 
@@ -95,7 +100,7 @@ class GoogleLoginSerializer(serializers.Serializer):
             idinfo = id_token.verify_oauth2_token(
                 token,
                 requests.Request(),
-                "561045528016-8163t08npk65blagn9tf8uf5qtu3nnbe.apps.googleusercontent.com" 
+                "561045528016-8163t08npk65blagn9tf8uf5qtu3nnbe.apps.googleusercontent.com",
             )
         except:
             raise serializers.ValidationError("Invalid token")
@@ -109,7 +114,7 @@ class GoogleLoginSerializer(serializers.Serializer):
                 "username": email,
                 "full_name": name,
                 "is_verified": True,
-            }
+            },
         )
 
         refresh = RefreshToken.for_user(user)
@@ -119,3 +124,42 @@ class GoogleLoginSerializer(serializers.Serializer):
             "access": str(refresh.access_token),
             "refresh": str(refresh),
         }
+
+
+class SkillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Skill
+        fields = "__all__"
+
+
+class UserSkillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSkill
+        fields = "__all__"
+
+
+class PortfolioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Portfolio
+        fields = "__all__"
+        read_only_fields = ["user"]
+
+
+class EducationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Education
+        fields = "__all__"
+        read_only_fields = ["user"]
+
+
+class ExperienceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Experience
+        fields = "__all__"
+        read_only_fields = ["user"]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = "__all__"

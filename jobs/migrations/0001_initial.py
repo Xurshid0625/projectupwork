@@ -15,17 +15,54 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Job',
+            name="Job",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField()),
-                ('budget', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('job_type', models.CharField(choices=[('fixed', 'Fixed'), ('hourly', 'Hourly')], max_length=10)),
-                ('experience_level', models.CharField(choices=[('junior', 'Junior'), ('mid', 'Mid'), ('senior', 'Senior')], max_length=10)),
-                ('status', models.CharField(choices=[('open', 'Open'), ('closed', 'Closed')], default='open', max_length=10)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                ("description", models.TextField()),
+                ("budget", models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "job_type",
+                    models.CharField(
+                        choices=[("fixed", "Fixed"), ("hourly", "Hourly")],
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "experience_level",
+                    models.CharField(
+                        choices=[
+                            ("junior", "Junior"),
+                            ("mid", "Mid"),
+                            ("senior", "Senior"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[("open", "Open"), ("closed", "Closed")],
+                        default="open",
+                        max_length=10,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

@@ -1,12 +1,35 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .models import Job, Proposal, Contract, Conversation,Review, JobAlert, SavedCandidate
-from .serializers import JobSerializer, ProposalSerializer, ContractSerializer, MessageSerializer, ReviewSerializer
 from django.db import models
 from django.shortcuts import get_object_or_404
-from jobs.models import Favorite
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from jobs.models import Favorite
+from users.models import Notification
+
+from .models import (
+    Category,
+    Contract,
+    Conversation,
+    Job,
+    JobAlert,
+    JobCategory,
+    Proposal,
+    Review,
+    SavedCandidate,
+)
+from .serializers import (
+    ContractSerializer,
+    JobSerializer,
+    MessageSerializer,
+    ProposalSerializer,
+    ReviewSerializer,
+)
+
+
+class CustomPagination(PageNumberPagination):
+    page_size = 3
 
 
 class JobView(APIView):
@@ -16,13 +39,28 @@ class JobView(APIView):
         serializer = JobSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            job = serializer.save(user=request.user)
+
+            category_id = request.data.get("category_id")
+            if category_id:
+                JobCategory.objects.create(job=job, category_id=category_id)
+
             return Response(serializer.data)
 
         return Response(serializer.errors, status=400)
 
     def get(self, request):
-        jobs = Job.objects.all().order_by('-created_at')
+        jobs = Job.objects.all().order_by("-created_at")
+        
+        search = request.GET.get("search")
+
+        if search:
+            jobs = jobs.filter(title__icontains=search)
+
+        category_id = request.GET.get("category")
+        if category_id:
+            jobs = jobs.filter(jobcategory__category_id=category_id)
+
         serializer = JobSerializer(jobs, many=True)
         return Response(serializer.data)
 
@@ -57,9 +95,8 @@ class JobDetailView(APIView):
 
         job.delete()
         return Response({"message": "Deleted"})
-    
-    
-    
+
+
 class ApplyJobView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -70,18 +107,19 @@ class ApplyJobView(APIView):
         if Proposal.objects.filter(job=job, freelancer=request.user).exists():
             return Response({"error": "Already applied"}, status=400)
 
+        Notification.objects.create(
+            user=job.user, message=f"{request.user.username} applied to your job"
+        )
+
         serializer = ProposalSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save(
-                freelancer=request.user,
-                job=job
-            )
+            serializer.save(freelancer=request.user, job=job)
             return Response(serializer.data, status=201)
 
         return Response(serializer.errors, status=400)
-    
-    
+
+
 class AppliedJobsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -89,16 +127,12 @@ class AppliedJobsView(APIView):
         proposals = Proposal.objects.filter(freelancer=request.user)
 
         data = proposals.values(
-            "id",
-            "job__id",
-            "job__title",
-            "bid_amount",
-            "status",
-            "created_at"
+            "id", "job__id", "job__title", "bid_amount", "status", "created_at"
         )
 
         return Response(data)
-    
+
+
 class JobProposalsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -111,8 +145,8 @@ class JobProposalsView(APIView):
         proposals = Proposal.objects.filter(job=job)
         serializer = ProposalSerializer(proposals, many=True)
         return Response(serializer.data)
-    
-    
+
+
 class ProposalActionView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -127,24 +161,28 @@ class ProposalActionView(APIView):
         if action == "accept":
             proposal.status = "accepted"
             proposal.save()
-            
+
+            Notification.objects.create(
+                user=proposal.freelancer, message="Your proposal was accepted"
+            )
             contract = Contract.objects.create(
                 job=proposal.job,
                 freelancer=proposal.freelancer,
-                client=proposal.job.user
+                client=proposal.job.user,
             )
-            
+
             Conversation.objects.create(contract=contract)
 
             return Response({"message": "Accepted, contract and chat created"})
 
         elif action == "reject":
-                proposal.status = "rejected"
-                proposal.save()
-                return Response({"message": "Rejected"})
+            proposal.status = "rejected"
+            proposal.save()
+            return Response({"message": "Rejected"})
 
         return Response({"error": "Invalid action"}, status=400)
-    
+
+
 class ContractView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -155,39 +193,50 @@ class ContractView(APIView):
 
         serializer = ContractSerializer(contracts, many=True)
         return Response(serializer.data)
-    
+
+
 class SendMessageView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, contract_id):
         conversation = get_object_or_404(Conversation, contract_id=contract_id)
 
-        # ❗ faqat shu contract userlari yozishi mumkin
-        if request.user not in [conversation.contract.client, conversation.contract.freelancer]:
+        if request.user not in [
+            conversation.contract.client,
+            conversation.contract.freelancer,
+        ]:
             return Response({"error": "Not allowed"}, status=403)
 
         serializer = MessageSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save(
-                sender=request.user,
-                conversation=conversation
+            message = serializer.save(sender=request.user, conversation=conversation)
+
+            if request.user == conversation.contract.client:
+                receiver = conversation.contract.freelancer
+            else:
+                receiver = conversation.contract.client
+
+            Notification.objects.create(
+                user=receiver, message=f"New message from {request.user.username}"
             )
+
             return Response(serializer.data)
 
         return Response(serializer.errors, status=400)
-    
+
+
 class MessageListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, contract_id):
         conversation = get_object_or_404(Conversation, contract_id=contract_id)
 
-        messages = conversation.messages.all().order_by('created_at')
+        messages = conversation.messages.all().order_by("created_at")
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
-    
-    
+
+
 class CreateReviewView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -211,15 +260,11 @@ class CreateReviewView(APIView):
         serializer = ReviewSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save(
-                reviewer=request.user,
-                reviewee=reviewee,
-                contract=contract
-            )
+            serializer.save(reviewer=request.user, reviewee=reviewee, contract=contract)
             return Response(serializer.data)
 
         return Response(serializer.errors, status=400)
-    
+
 
 class DashboardView(APIView):
     permission_classes = [IsAuthenticated]
@@ -231,12 +276,14 @@ class DashboardView(APIView):
         contracts = Contract.objects.filter(freelancer=user).count()
         favorites = Favorite.objects.filter(user=user).count()
 
-        return Response({
-            "applied_jobs": applied_jobs,
-            "contracts": contracts,
-            "favorites": favorites
-        })
-        
+        return Response(
+            {
+                "applied_jobs": applied_jobs,
+                "contracts": contracts,
+                "favorites": favorites,
+            }
+        )
+
 
 class ToggleFavoriteView(APIView):
     permission_classes = [IsAuthenticated]
@@ -253,38 +300,33 @@ class ToggleFavoriteView(APIView):
         else:
             Favorite.objects.create(user=user, job=job)
             return Response({"message": "Added to favorites"})
-        
+
+
 class FavoriteJobsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         favorites = Favorite.objects.filter(user=request.user)
 
-        data = favorites.values(
-            "job__id",
-            "job__title"
-        )
+        data = favorites.values("job__id", "job__title")
 
         return Response(data)
-    
+
+
 class JobAlertView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         alerts = JobAlert.objects.filter(user=request.user)
-        return Response([
-            {
-                "id": a.id,
-                "keyword": a.keyword,
-                "location": a.location
-            } for a in alerts
-        ])
+        return Response(
+            [{"id": a.id, "keyword": a.keyword, "location": a.location} for a in alerts]
+        )
 
     def post(self, request):
         alert = JobAlert.objects.create(
             user=request.user,
             keyword=request.data.get("keyword"),
-            location=request.data.get("location", "")
+            location=request.data.get("location", ""),
         )
         return Response({"message": "Alert created"})
 
@@ -295,20 +337,22 @@ class SavedCandidateView(APIView):
     def get(self, request):
         saved = SavedCandidate.objects.filter(client=request.user)
 
-        return Response([
-            {
-                "id": s.id,
-                "freelancer_id": s.freelancer.id,
-                "name": s.freelancer.username
-            } for s in saved
-        ])
+        return Response(
+            [
+                {
+                    "id": s.id,
+                    "freelancer_id": s.freelancer.id,
+                    "name": s.freelancer.username,
+                }
+                for s in saved
+            ]
+        )
 
     def post(self, request):
         freelancer_id = request.data.get("freelancer")
 
         obj, created = SavedCandidate.objects.get_or_create(
-            client=request.user,
-            freelancer_id=freelancer_id
+            client=request.user, freelancer_id=freelancer_id
         )
 
         if not created:
@@ -323,19 +367,48 @@ class JobApplicationsView(APIView):
     def get(self, request, job_id):
         job = get_object_or_404(Job, id=job_id)
 
-        # ❗ faqat job egasi ko‘ra oladi
         if job.user != request.user:
             return Response({"error": "Not allowed"}, status=403)
 
         proposals = Proposal.objects.filter(job=job)
 
-        return Response([
-            {
-                "id": p.id,
-                "freelancer_id": p.freelancer.id,
-                "freelancer": p.freelancer.username,
-                "bid_amount": p.bid_amount,
-                "status": p.status,
-                "cover_letter": p.cover_letter
-            } for p in proposals
-        ])
+        search = request.GET.get("search")
+        if search:
+            proposals = proposals.filter(freelancer__username__icontains=search)
+
+        proposals = proposals.order_by("-created_at")
+
+        paginator = CustomPagination()
+        result = paginator.paginate_queryset(proposals, request)
+
+        return Response(
+            [
+                {
+                    "id": p.id,
+                    "freelancer_id": p.freelancer.id,
+                    "freelancer": p.freelancer.username,
+                    "bid_amount": p.bid_amount,
+                    "status": p.status,
+                    "cover_letter": p.cover_letter,
+                }
+                for p in proposals
+            ]
+        )
+
+
+class CategoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        categories = Category.objects.all()
+        return Response([{"id": c.id, "name": c.name} for c in categories])
+
+    def post(self, request):
+        name = request.data.get("name")
+
+        if not name:
+            return Response({"error": "Name required"}, status=400)
+
+        category = Category.objects.create(name=name)
+
+        return Response({"id": category.id, "name": category.name})

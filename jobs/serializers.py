@@ -1,32 +1,37 @@
 from rest_framework import serializers
-from .models import Job, Proposal, Contract, Message, Review
+
+from .models import Contract, Job, Message, Proposal, Review
+
 
 class JobSerializer(serializers.ModelSerializer):
     class Meta:
         model = Job
-        fields = '__all__'
-        read_only_fields = ['user']
-        
-        
+        fields = "__all__"
+        read_only_fields = ["user"]
+
+
 class ProposalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Proposal
-        fields = '__all__'
-        read_only_fields = ['freelancer', 'status', 'job']
-        
+        fields = "__all__"
+        read_only_fields = ["freelancer", "status", "job"]
+
+
 class ContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
-        fields = '__all__'
-        
+        fields = "__all__"
+
+
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = '__all__'
-        read_only_fields = ['sender','conversation']
-        
+        fields = "__all__"
+        read_only_fields = ["sender", "conversation"]
+
+
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields = '__all__'
-        read_only_fields = ['reviewer', 'reviewee', 'contract']
+        fields = "__all__"
+        read_only_fields = ["reviewer", "reviewee", "contract"]

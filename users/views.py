@@ -1,17 +1,27 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer, GoogleLoginSerializer
-from rest_framework.permissions import IsAuthenticated
-from .serializers import ForgotPasswordSerializer
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str
+from django.shortcuts import get_object_or_404
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from .models import Education, Experience, Notification, Portfolio, Skill, UserSkill
+from .serializers import (
+    EducationSerializer,
+    ExperienceSerializer,
+    ForgotPasswordSerializer,
+    GoogleLoginSerializer,
+    LoginSerializer,
+    NotificationSerializer,
+    PortfolioSerializer,
+    ProfileSerializer,
+    RegisterSerializer,
+    SkillSerializer,
+)
 
 User = get_user_model()
 
@@ -22,12 +32,12 @@ class RegisterView(APIView):
 
         if serializer.is_valid():
             user = serializer.save()
-            
+
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-            
+
             verify_link = f"http://127.0.0.1:8000/api/verify-email/{uid}/{token}/"
-            
+
             send_mail(
                 subject="Verify your email",
                 message=f"Click link: {verify_link}",
@@ -54,8 +64,8 @@ class VerifyEmailView(APIView):
         user.save()
 
         return Response({"message": "Email verified successfully"})
-    
-    
+
+
 class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -64,7 +74,8 @@ class LoginView(APIView):
             return Response(serializer.validated_data)
 
         return Response(serializer.errors, status=400)
-    
+
+
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -81,15 +92,15 @@ class ProfileView(APIView):
             serializer.save()
             return Response(serializer.data)
 
-        return Response(serializer.errors, status=400) 
-    
-    
+        return Response(serializer.errors, status=400)
+
+
 class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
 
         if serializer.is_valid():
-            email = serializer.validated_data['email']
+            email = serializer.validated_data["email"]
             user = User.objects.get(email=email)
 
             uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -109,8 +120,6 @@ class ForgotPasswordView(APIView):
         return Response(serializer.errors, status=400)
 
 
-
-
 class ResetPasswordView(APIView):
     def post(self, request, uidb64, token):
         try:
@@ -127,8 +136,8 @@ class ResetPasswordView(APIView):
         user.set_password(new_password)
         user.save()
 
-        return Response({"message": "Password reset successful"}) 
-    
+        return Response({"message": "Password reset successful"})
+
 
 class GoogleLoginView(APIView):
     def post(self, request):
@@ -139,3 +148,98 @@ class GoogleLoginView(APIView):
 
         return Response(serializer.errors, status=400)
 
+
+class SkillView(APIView):
+    def get(self, request):
+        skills = Skill.objects.all()
+        serializer = SkillSerializer(skills, many=True)
+        return Response(serializer.data)
+
+
+class AddUserSkillView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        skill_id = request.data.get("skill_id")
+
+        skill = get_object_or_404(Skill, id=skill_id)
+
+        exists = UserSkill.objects.filter(user=request.user, skill=skill).exists()
+
+        if exists:
+            return Response({"message": "Skill already added"}, status=400)
+
+        UserSkill.objects.create(user=request.user, skill=skill)
+
+        return Response({"message": "Skill added successfully"})
+
+
+class PortfolioView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        items = Portfolio.objects.filter(user=request.user)
+        serializer = PortfolioSerializer(items, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = PortfolioSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=400)
+
+
+class EducationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        items = Education.objects.filter(user=request.user)
+        serializer = EducationSerializer(items, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = EducationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=400)
+
+
+class ExperienceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        items = Experience.objects.filter(user=request.user)
+        serializer = ExperienceSerializer(items, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = ExperienceSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=400)
+
+
+class NotificationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifications = Notification.objects.filter(user=request.user).order_by(
+            "-created_at"
+        )
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        notif = get_object_or_404(Notification, id=pk, user=request.user)
+        notif.is_read = True
+        notif.save()
+        return Response({"message": "Marked as read"})
