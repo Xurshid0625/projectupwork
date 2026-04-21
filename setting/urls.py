@@ -37,9 +37,7 @@ urlpatterns = [
     path("api/", include("users.urls")),
     path("api/jobs/", include("jobs.urls")),
     path("api/", include("jobs.urls")),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0)),
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0)),
-    path('login/', auth_views.LoginView.as_view(), name='login'),
+    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0)),
     re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0)),
 ]
 
