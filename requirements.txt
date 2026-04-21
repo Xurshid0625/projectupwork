@@ -8,9 +8,11 @@ cryptography==46.0.7
 Django==5.2.13
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
+drf-yasg==1.21.15
 google-auth==2.49.2
 gunicorn==25.3.0
 idna==3.11
+inflection==0.5.1
 isort==8.0.1
 mypy_extensions==1.1.0
 packaging==26.1
@@ -23,8 +25,11 @@ pycparser==3.0
 PyJWT==2.12.1
 python-dotenv==1.2.2
 pytokens==0.4.1
+pytz==2026.1.post1
+PyYAML==6.0.3
 requests==2.33.1
 sqlparse==0.5.5
 tomli==2.4.1
 typing_extensions==4.15.0
+uritemplate==4.2.0
 urllib3==2.6.3
