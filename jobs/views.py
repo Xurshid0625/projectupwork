@@ -1,9 +1,11 @@
 from django.db import models
 from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_yasg.utils import swagger_auto_schema
 
 from jobs.models import Favorite
 from users.models import Notification
@@ -35,6 +37,7 @@ class CustomPagination(PageNumberPagination):
 class JobView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(request_body=JobSerializer)
     def post(self, request):
         serializer = JobSerializer(data=request.data)
 
@@ -51,7 +54,7 @@ class JobView(APIView):
 
     def get(self, request):
         jobs = Job.objects.all().order_by("-created_at")
-        
+
         search = request.GET.get("search")
 
         if search:
@@ -73,6 +76,7 @@ class JobDetailView(APIView):
         serializer = JobSerializer(job)
         return Response(serializer.data)
 
+    @swagger_auto_schema(request_body=JobSerializer)
     def put(self, request, pk):
         job = get_object_or_404(Job, pk=pk)
 
@@ -100,10 +104,10 @@ class JobDetailView(APIView):
 class ApplyJobView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(request_body=ProposalSerializer)
     def post(self, request, job_id):
         job = get_object_or_404(Job, id=job_id)
 
-        # ❗ oldin apply qilganmi tekshiramiz
         if Proposal.objects.filter(job=job, freelancer=request.user).exists():
             return Response({"error": "Already applied"}, status=400)
 
@@ -150,6 +154,12 @@ class JobProposalsView(APIView):
 class ProposalActionView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={"action": openapi.Schema(type=openapi.TYPE_STRING)},
+        )
+    )
     def post(self, request, pk):
         proposal = get_object_or_404(Proposal, id=pk)
 
@@ -198,6 +208,7 @@ class ContractView(APIView):
 class SendMessageView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(request_body=MessageSerializer)
     def post(self, request, contract_id):
         conversation = get_object_or_404(Conversation, contract_id=contract_id)
 
@@ -240,20 +251,19 @@ class MessageListView(APIView):
 class CreateReviewView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(request_body=ReviewSerializer)
     def post(self, request, contract_id):
+
         contract = get_object_or_404(Contract, id=contract_id)
 
-        # ❗ faqat shu contract userlari yozadi
         if request.user not in [contract.client, contract.freelancer]:
             return Response({"error": "Not allowed"}, status=403)
 
-        # ❗ kim kimga yozmoqda
         if request.user == contract.client:
             reviewee = contract.freelancer
         else:
             reviewee = contract.client
 
-        # ❗ 2 marta yozmasin
         if Review.objects.filter(contract=contract, reviewer=request.user).exists():
             return Response({"error": "Already reviewed"}, status=400)
 
@@ -288,6 +298,9 @@ class DashboardView(APIView):
 class ToggleFavoriteView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={})
+    )
     def post(self, request, pk):
         user = request.user
         job = get_object_or_404(Job, pk=pk)
@@ -322,6 +335,15 @@ class JobAlertView(APIView):
             [{"id": a.id, "keyword": a.keyword, "location": a.location} for a in alerts]
         )
 
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "keyword": openapi.Schema(type=openapi.TYPE_STRING),
+                "location": openapi.Schema(type=openapi.TYPE_STRING),
+            },
+        )
+    )
     def post(self, request):
         alert = JobAlert.objects.create(
             user=request.user,
@@ -348,6 +370,12 @@ class SavedCandidateView(APIView):
             ]
         )
 
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={"freelancer": openapi.Schema(type=openapi.TYPE_INTEGER)},
+        )
+    )
     def post(self, request):
         freelancer_id = request.data.get("freelancer")
 
@@ -403,6 +431,12 @@ class CategoryView(APIView):
         categories = Category.objects.all()
         return Response([{"id": c.id, "name": c.name} for c in categories])
 
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={"name": openapi.Schema(type=openapi.TYPE_STRING)},
+        )
+    )
     def post(self, request):
         name = request.data.get("name")
 

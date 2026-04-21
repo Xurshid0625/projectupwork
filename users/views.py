@@ -4,6 +4,7 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from drf_yasg import openapi
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -89,6 +90,7 @@ class ProfileView(APIView):
         serializer = ProfileSerializer(profile)
         return Response(serializer.data)
 
+    @swagger_auto_schema(request_body=ProfileSerializer)
     def put(self, request):
         profile = request.user.profile
         serializer = ProfileSerializer(profile, data=request.data, partial=True)
@@ -101,6 +103,7 @@ class ProfileView(APIView):
 
 
 class ForgotPasswordView(APIView):
+    @swagger_auto_schema(request_body=ForgotPasswordSerializer)
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
 
@@ -126,6 +129,13 @@ class ForgotPasswordView(APIView):
 
 
 class ResetPasswordView(APIView):
+    
+    @swagger_auto_schema(request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "password": openapi.Schema(type=openapi.TYPE_STRING)
+            }
+        ))
     def post(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -145,6 +155,7 @@ class ResetPasswordView(APIView):
 
 
 class GoogleLoginView(APIView):
+    @swagger_auto_schema(request_body=GoogleLoginSerializer)
     def post(self, request):
         serializer = GoogleLoginSerializer(data=request.data)
 
@@ -164,6 +175,12 @@ class SkillView(APIView):
 class AddUserSkillView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            "skill_id": openapi.Schema(type=openapi.TYPE_INTEGER)
+        }
+    ))
     def post(self, request):
         skill_id = request.data.get("skill_id")
 
@@ -187,6 +204,7 @@ class PortfolioView(APIView):
         serializer = PortfolioSerializer(items, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(request_body=PortfolioSerializer)
     def post(self, request):
         serializer = PortfolioSerializer(data=request.data)
 
@@ -204,7 +222,7 @@ class EducationView(APIView):
         items = Education.objects.filter(user=request.user)
         serializer = EducationSerializer(items, many=True)
         return Response(serializer.data)
-
+    @swagger_auto_schema(request_body=EducationSerializer)
     def post(self, request):
         serializer = EducationSerializer(data=request.data)
 
@@ -222,7 +240,7 @@ class ExperienceView(APIView):
         items = Experience.objects.filter(user=request.user)
         serializer = ExperienceSerializer(items, many=True)
         return Response(serializer.data)
-
+    @swagger_auto_schema(request_body=ExperienceSerializer)
     def post(self, request):
         serializer = ExperienceSerializer(data=request.data)
 
