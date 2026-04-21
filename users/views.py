@@ -74,7 +74,9 @@ class LoginView(APIView):
 
     @swagger_auto_schema(request_body=LoginSerializer)
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
+        data = request.data.get("data", request.data)
+
+        serializer = LoginSerializer(data=data)
 
         if serializer.is_valid():
             return Response(serializer.validated_data)
