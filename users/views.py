@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_yasg.utils import swagger_auto_schema
 
 from .models import Education, Experience, Notification, Portfolio, Skill, UserSkill
 from .serializers import (
@@ -67,6 +68,8 @@ class VerifyEmailView(APIView):
 
 
 class LoginView(APIView):
+
+    @swagger_auto_schema(request_body=LoginSerializer)
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
