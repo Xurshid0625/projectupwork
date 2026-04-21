@@ -36,7 +36,7 @@ ALLOWED_HOSTS = ["*"]
 AUTH_USER_MODEL = "users.User"
 
 SWAGGER_SETTINGS = {
-    'USE_SESSION_AUTH': True,
+    'USE_SESSION_AUTH': False,
 }
 
 
