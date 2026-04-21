@@ -37,6 +37,13 @@ AUTH_USER_MODEL = "users.User"
 
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+        }
+    },
 }
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
