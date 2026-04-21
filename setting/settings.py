@@ -33,7 +33,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 AUTH_USER_MODEL = "users.User"
+CORS_ALLOW_ALL_ORIGINS = True
 
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
@@ -61,6 +63,7 @@ INSTALLED_APPS = [
     "users",
     "jobs",
     "drf_yasg",
+    "corsheaders",
 ]
 
 REST_FRAMEWORK = {
@@ -87,6 +90,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "setting.urls"
