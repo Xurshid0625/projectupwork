@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "users",
     "jobs",
+    "drf_yasg",
 ]
 
 REST_FRAMEWORK = {
