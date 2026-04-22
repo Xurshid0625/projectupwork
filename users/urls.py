@@ -13,7 +13,6 @@ from .views import (
     RegisterView,
     ResetPasswordView,
     SkillView,
-    VerifyEmailView,
 )
 
 urlpatterns = [
@@ -22,7 +21,7 @@ urlpatterns = [
     path("profile/", ProfileView.as_view()),
     path("forgot-password/", ForgotPasswordView.as_view()),
     path("reset-password/<uidb64>/<token>/", ResetPasswordView.as_view()),
-    path("verify-email/<uidb64>/<token>/", VerifyEmailView.as_view()),
+    # path("verify-email/<uidb64>/<token>/", VerifyEmailView.as_view()),
     path("google-login/", GoogleLoginView.as_view()),
     path("skills/", SkillView.as_view()),
     path("add-skill/", AddUserSkillView.as_view()),
