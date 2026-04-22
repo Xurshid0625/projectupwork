@@ -20,7 +20,13 @@ User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    email = serializers.EmailField(default="test@gmail.com")
+    username = serializers.CharField(default="testuser")
+    password = serializers.CharField(write_only=True, default="12345678")
+    full_name = serializers.CharField(default="Test User")
+    role = serializers.ChoiceField(
+        choices=[("client", "Client"), ("freelancer", "Freelancer")], default="client"
+    )
 
     class Meta:
         model = User
@@ -38,8 +44,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField()
+    email = serializers.EmailField(default="test@gmail.com")
+    password = serializers.CharField(default="12345678")
 
     def validate(self, data):
         email = data.get("email")
