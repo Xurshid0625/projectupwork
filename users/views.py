@@ -38,11 +38,9 @@ class RegisterView(APIView):
         if serializer.is_valid():
             user = serializer.save()
 
-            # 🔥 vaqtincha verify
             user.is_verified = True
             user.save()
 
-            # 🔥 TOKEN GENERATE
             refresh = RefreshToken.for_user(user)
 
             return Response({
