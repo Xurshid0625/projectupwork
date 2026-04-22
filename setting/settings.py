@@ -42,7 +42,7 @@ CORS_ALLOWED_ORIGINS = ['*']
 SWAGGER_SETTINGS = {
     "USE_SESSION_AUTH": False,
     "JSON_EDITOR": True,
-    "VALIDATOR_URL": None,  # 🔥 MUHIM
+    "VALIDATOR_URL": None,
     "SECURITY_DEFINITIONS": {
         "Bearer": {
             "type": "apiKey",
