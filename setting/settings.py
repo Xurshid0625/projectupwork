@@ -38,6 +38,10 @@ CORS_ALLOWED_ORIGINS = [
     "https://web-production-32f4e.up.railway.app",
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 SWAGGER_SETTINGS = {
     "USE_SESSION_AUTH": False,
     "JSON_EDITOR": True,
