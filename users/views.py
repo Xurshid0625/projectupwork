@@ -33,86 +33,75 @@ User = get_user_model()
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                "email": openapi.Schema(type=openapi.TYPE_STRING),
-                "username": openapi.Schema(type=openapi.TYPE_STRING),
-                "password": openapi.Schema(type=openapi.TYPE_STRING),
-                "full_name": openapi.Schema(type=openapi.TYPE_STRING),
-                "role": openapi.Schema(type=openapi.TYPE_STRING),
-            },
-            required=["email", "username", "password", "full_name", "role"],
-        )
-    )
+    @swagger_auto_schema(request_body=RegisterSerializer)
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
 
         if serializer.is_valid():
             user = serializer.save()
 
-            user.is_verified = True
-            user.save()
+            # verify link generate
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
 
-            refresh = RefreshToken.for_user(user)
+            verify_link = f"https://web-production-32f4e.up.railway.app/api/verify-email/{uid}/{token}/"
+
+            # email yuborish
+            send_mail(
+                subject="Verify your email",
+                message=f"Click this link to verify: {verify_link}",
+                from_email="abdumannonovxurshid0625@gmail.com",
+                recipient_list=[user.email],
+            )
 
             return Response(
-                {
-                    "user": {
-                        "id": user.id,
-                        "email": user.email,
-                        "username": user.username,
-                    },
-                    "access": str(refresh.access_token),
-                    "refresh": str(refresh),
-                },
+                {"message": "User created. Check your email to verify."},
                 status=201,
             )
 
         return Response(serializer.errors, status=400)
 
 
-# class RegisterView(APIView):
+class RegisterView(APIView):
 
-#     @swagger_auto_schema(request_body=RegisterSerializer)
-#     def post(self, request):
-#         serializer = RegisterSerializer(data=request.data)
+    @swagger_auto_schema(request_body=RegisterSerializer)
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
 
-#         if serializer.is_valid():
-#             user = serializer.save()
+        if serializer.is_valid():
+            user = serializer.save()
 
-#             uid = urlsafe_base64_encode(force_bytes(user.pk))
-#             token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
 
-#             verify_link = f"http://127.0.0.1:8000/api/verify-email/{uid}/{token}/"
+            verify_link = f"http://127.0.0.1:8000/api/verify-email/{uid}/{token}/"
 
-#             send_mail(
-#                 subject="Verify your email",
-#                 message=f"Click link: {verify_link}",
-#                 from_email="abdumannonovxurshid0625@gmail.com",
-#                 recipient_list=[user.email],
-#             )
-#             return Response({"message": "User created. Check your email"})
+            send_mail(
+                subject="Verify your email",
+                message=f"Click link: {verify_link}",
+                from_email="abdumannonovxurshid0625@gmail.com",
+                recipient_list=[user.email],
+            )
+            return Response({"message": "User created. Check your email"})
 
-#         return Response(serializer.errors, status=400)
+        return Response(serializer.errors, status=400)
 
 
-# class VerifyEmailView(APIView):
-#     def get(self, request, uidb64, token):
-#         try:
-#             uid = force_str(urlsafe_base64_decode(uidb64))
-#             user = User.objects.get(pk=uid)
-#         except:
-#             return Response({"error": "Invalid link"}, status=400)
+class VerifyEmailView(APIView):
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except:
+            return Response({"error": "Invalid link"}, status=400)
 
-#         if not default_token_generator.check_token(user, token):
-#             return Response({"error": "Invalid token"}, status=400)
+        if not default_token_generator.check_token(user, token):
+            return Response({"error": "Invalid token"}, status=400)
 
-#         user.is_verified = True
-#         user.save()
+        user.is_verified = True
+        user.save()
 
-#         return Response({"message": "Email verified successfully"})
+        return Response({"message": "Email verified successfully"})
 
 
 class LoginView(APIView):
