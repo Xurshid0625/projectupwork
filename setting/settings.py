@@ -37,10 +37,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 AUTH_USER_MODEL = "users.User"
 CORS_ALLOW_ALL_ORIGINS = False
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://yourfrontend.com",
-]
+CORS_ALLOWED_ORIGINS = ['*']
 
 SWAGGER_SETTINGS = {
     "USE_SESSION_AUTH": False,
