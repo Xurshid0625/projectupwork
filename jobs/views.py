@@ -438,6 +438,7 @@ class CategoryView(APIView):
         )
     )
     def post(self, request):
+        
         name = request.data.get("name")
 
         if not name:

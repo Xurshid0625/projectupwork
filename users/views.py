@@ -34,17 +34,9 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                "email": openapi.Schema(type=openapi.TYPE_STRING),
-                "username": openapi.Schema(type=openapi.TYPE_STRING),
-                "password": openapi.Schema(type=openapi.TYPE_STRING),
-                "full_name": openapi.Schema(type=openapi.TYPE_STRING),
-                "role": openapi.Schema(type=openapi.TYPE_STRING),
-            },
-            required=["email", "username", "password", "full_name", "role"],
-        )
+        tags=["Auth"],
+        operation_summary="Register user",
+        request_body=RegisterSerializer,
     )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -118,7 +110,7 @@ class RegisterView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(request_body=LoginSerializer)
+    @swagger_auto_schema(tags=["Auth"], request_body=LoginSerializer)
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
@@ -136,7 +128,7 @@ class ProfileView(APIView):
         serializer = ProfileSerializer(profile)
         return Response(serializer.data)
 
-    @swagger_auto_schema(request_body=ProfileSerializer)
+    @swagger_auto_schema(tags=["Profile"], request_body=ProfileSerializer)
     def put(self, request):
         profile = request.user.profile
         serializer = ProfileSerializer(profile, data=request.data, partial=True)
@@ -149,7 +141,7 @@ class ProfileView(APIView):
 
 
 class ForgotPasswordView(APIView):
-    @swagger_auto_schema(request_body=ForgotPasswordSerializer)
+    @swagger_auto_schema(tags=["Auth"], request_body=ForgotPasswordSerializer)
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
 
@@ -177,10 +169,11 @@ class ForgotPasswordView(APIView):
 class ResetPasswordView(APIView):
 
     @swagger_auto_schema(
+        tags=["Auth"],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"password": openapi.Schema(type=openapi.TYPE_STRING)},
-        )
+        ),
     )
     def post(self, request, uidb64, token):
         try:
@@ -201,7 +194,7 @@ class ResetPasswordView(APIView):
 
 
 class GoogleLoginView(APIView):
-    @swagger_auto_schema(request_body=GoogleLoginSerializer)
+    @swagger_auto_schema(tags=["Auth"], request_body=GoogleLoginSerializer)
     def post(self, request):
         serializer = GoogleLoginSerializer(data=request.data)
 
@@ -212,6 +205,7 @@ class GoogleLoginView(APIView):
 
 
 class SkillView(APIView):
+    @swagger_auto_schema(tags=["Skills"])
     def get(self, request):
         skills = Skill.objects.all()
         serializer = SkillSerializer(skills, many=True)
@@ -222,10 +216,11 @@ class AddUserSkillView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
+        tags=["Skills"],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"skill_id": openapi.Schema(type=openapi.TYPE_INTEGER)},
-        )
+        ),
     )
     def post(self, request):
         skill_id = request.data.get("skill_id")
@@ -250,7 +245,7 @@ class PortfolioView(APIView):
         serializer = PortfolioSerializer(items, many=True)
         return Response(serializer.data)
 
-    @swagger_auto_schema(request_body=PortfolioSerializer)
+    @swagger_auto_schema(tags=["Portfolio"], request_body=PortfolioSerializer)
     def post(self, request):
         serializer = PortfolioSerializer(data=request.data)
 
@@ -269,7 +264,7 @@ class EducationView(APIView):
         serializer = EducationSerializer(items, many=True)
         return Response(serializer.data)
 
-    @swagger_auto_schema(request_body=EducationSerializer)
+    @swagger_auto_schema(tags=["Education"], request_body=EducationSerializer)
     def post(self, request):
         serializer = EducationSerializer(data=request.data)
 
@@ -288,7 +283,7 @@ class ExperienceView(APIView):
         serializer = ExperienceSerializer(items, many=True)
         return Response(serializer.data)
 
-    @swagger_auto_schema(request_body=ExperienceSerializer)
+    @swagger_auto_schema(tags=["Experience"], request_body=ExperienceSerializer)
     def post(self, request):
         serializer = ExperienceSerializer(data=request.data)
 
@@ -302,6 +297,7 @@ class ExperienceView(APIView):
 class NotificationView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(tags=["Notifications"])
     def get(self, request):
         notifications = Notification.objects.filter(user=request.user).order_by(
             "-created_at"
