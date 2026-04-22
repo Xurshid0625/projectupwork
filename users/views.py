@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import AllowAny
 
 from .models import Education, Experience, Notification, Portfolio, Skill, UserSkill
 from .serializers import (
@@ -30,6 +31,7 @@ User = get_user_model()
 
 
 class RegisterView(APIView):
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(request_body=RegisterSerializer)
     def post(self, request):
@@ -43,15 +45,18 @@ class RegisterView(APIView):
 
             refresh = RefreshToken.for_user(user)
 
-            return Response({
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "username": user.username,
+            return Response(
+                {
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "username": user.username,
+                    },
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
                 },
-                "access": str(refresh.access_token),
-                "refresh": str(refresh)
-            })
+                status=201,
+            )
 
         return Response(serializer.errors, status=400)
 
@@ -99,13 +104,14 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(request_body=LoginSerializer)
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
         if serializer.is_valid():
-            return Response(serializer.validated_data)
+            return Response(serializer.validated_data, status=200)
 
         return Response(serializer.errors, status=400)
 
@@ -157,13 +163,13 @@ class ForgotPasswordView(APIView):
 
 
 class ResetPasswordView(APIView):
-    
-    @swagger_auto_schema(request_body=openapi.Schema(
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            properties={
-                "password": openapi.Schema(type=openapi.TYPE_STRING)
-            }
-        ))
+            properties={"password": openapi.Schema(type=openapi.TYPE_STRING)},
+        )
+    )
     def post(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -203,12 +209,12 @@ class SkillView(APIView):
 class AddUserSkillView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={
-            "skill_id": openapi.Schema(type=openapi.TYPE_INTEGER)
-        }
-    ))
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={"skill_id": openapi.Schema(type=openapi.TYPE_INTEGER)},
+        )
+    )
     def post(self, request):
         skill_id = request.data.get("skill_id")
 
@@ -250,6 +256,7 @@ class EducationView(APIView):
         items = Education.objects.filter(user=request.user)
         serializer = EducationSerializer(items, many=True)
         return Response(serializer.data)
+
     @swagger_auto_schema(request_body=EducationSerializer)
     def post(self, request):
         serializer = EducationSerializer(data=request.data)
@@ -268,6 +275,7 @@ class ExperienceView(APIView):
         items = Experience.objects.filter(user=request.user)
         serializer = ExperienceSerializer(items, many=True)
         return Response(serializer.data)
+
     @swagger_auto_schema(request_body=ExperienceSerializer)
     def post(self, request):
         serializer = ExperienceSerializer(data=request.data)
