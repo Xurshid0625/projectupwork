@@ -33,7 +33,19 @@ User = get_user_model()
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(request_body=RegisterSerializer)
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "email": openapi.Schema(type=openapi.TYPE_STRING),
+                "username": openapi.Schema(type=openapi.TYPE_STRING),
+                "password": openapi.Schema(type=openapi.TYPE_STRING),
+                "full_name": openapi.Schema(type=openapi.TYPE_STRING),
+                "role": openapi.Schema(type=openapi.TYPE_STRING),
+            },
+            required=["email", "username", "password", "full_name", "role"],
+        )
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
 
