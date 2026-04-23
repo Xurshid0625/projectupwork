@@ -52,7 +52,7 @@ class JobView(APIView):
 
         return Response(serializer.errors, status=400)
 
-    @swagger_auto_schema(tags=["jobs"])
+    @swagger_auto_schema(tags=["Jobs"])
 
     def get(self, request):
         jobs = Job.objects.all().order_by("-created_at")
@@ -144,7 +144,7 @@ class AppliedJobsView(APIView):
 class JobProposalsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(tags=["Jobs"])
+    @swagger_auto_schema(tags=["Proposals"])
     def get(self, request, job_id):
         job = get_object_or_404(Job, id=job_id)
 
@@ -160,7 +160,7 @@ class ProposalActionView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        tags=["Jobs"],
+        tags=["Proposals"],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"action": openapi.Schema(type=openapi.TYPE_STRING)},
@@ -305,7 +305,7 @@ class ToggleFavoriteView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        tags=["Jobs"],
+        tags=["Favorites"],
         request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={}),
     )
     def post(self, request, pk):
@@ -324,7 +324,7 @@ class ToggleFavoriteView(APIView):
 
 class FavoriteJobsView(APIView):
     permission_classes = [IsAuthenticated]
-    @swagger_auto_schema(tags=["Jobs"])
+    @swagger_auto_schema(tags=["Favorites"])
     def get(self, request):
         favorites = Favorite.objects.filter(user=request.user)
 
@@ -335,7 +335,7 @@ class FavoriteJobsView(APIView):
 
 class JobAlertView(APIView):
     permission_classes = [IsAuthenticated]
-    @swagger_auto_schema(tags=["Jobs"])
+    @swagger_auto_schema(tags=["Job Alerts"])
     def get(self, request):
         alerts = JobAlert.objects.filter(user=request.user)
         return Response(
@@ -362,7 +362,7 @@ class JobAlertView(APIView):
 
 class SavedCandidateView(APIView):
     permission_classes = [IsAuthenticated]
-    @swagger_auto_schema(tags=["Jobs"])
+    @swagger_auto_schema(tags=["Saved Candidates"])
     def get(self, request):
         saved = SavedCandidate.objects.filter(client=request.user)
 
@@ -382,7 +382,7 @@ class SavedCandidateView(APIView):
             type=openapi.TYPE_OBJECT,
             properties={"freelancer": openapi.Schema(type=openapi.TYPE_INTEGER)},
         ),
-        tags=["Jobs"],
+        tags=["Saved Candidates"],
     )
     def post(self, request):
         freelancer_id = request.data.get("freelancer")
@@ -399,7 +399,7 @@ class SavedCandidateView(APIView):
 
 class JobApplicationsView(APIView):
     permission_classes = [IsAuthenticated]
-    @swagger_auto_schema(tags=["Jobs"])
+    @swagger_auto_schema(tags=["Proposals"])
     def get(self, request, job_id):
         job = get_object_or_404(Job, id=job_id)
 
@@ -434,13 +434,13 @@ class JobApplicationsView(APIView):
 
 class CategoryView(APIView):
     permission_classes = [IsAuthenticated]
-    @swagger_auto_schema(tags=["Jobs"])
+    @swagger_auto_schema(tags=["Categories"])
     def get(self, request):
         categories = Category.objects.all()
         return Response([{"id": c.id, "name": c.name} for c in categories])
 
     @swagger_auto_schema(
-        tags=["Jobs"],
+        tags=["Categories"],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"name": openapi.Schema(type=openapi.TYPE_STRING)},

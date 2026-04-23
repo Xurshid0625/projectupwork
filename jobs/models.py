@@ -107,7 +107,7 @@ class Review(models.Model):
         "users.User", on_delete=models.CASCADE, related_name="received_reviews"
     )
 
-    rating = models.IntegerField()  # 1-5
+    rating = models.IntegerField()
     comment = models.TextField()
 
     created_at = models.DateTimeField(auto_now_add=True)
