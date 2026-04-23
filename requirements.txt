@@ -9,3 +9,4 @@ sib-api-v3-sdk==7.6.0
 gunicorn
 google-auth==2.49.2
 psycopg2-binary==2.9.3
+requests==2.31.0
