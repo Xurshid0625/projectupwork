@@ -10,3 +10,4 @@ gunicorn
 google-auth==2.49.2
 psycopg2-binary==2.9.3
 requests==2.31.0
+Pillow==10.3.0
