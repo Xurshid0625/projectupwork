@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
+from .utils import send_verify_email
 
 
 from .models import Education, Experience, Notification, Portfolio, Skill, UserSkill
@@ -53,13 +54,8 @@ class RegisterView(APIView):
 
             verify_link = f"https://projectupwork-production.up.railway.app/api/verify-email/{uid}/{token}/"
 
-            send_mail(
-                subject="Verify your email",
-                message=f"Click this link: {verify_link}",
-                from_email="abdumannonovxurshid0625@gmail.com",
-                recipient_list=[user.email],
-            )
-
+            send_verify_email(user.email, verify_link)
+            
             return Response(
                 {"message": "User created. Check your email"},
                 status=201,
