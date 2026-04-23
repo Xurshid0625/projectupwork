@@ -37,7 +37,7 @@ class CustomPagination(PageNumberPagination):
 class JobView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(request_body=JobSerializer)
+    @swagger_auto_schema(tags=["Jobs"], request_body=JobSerializer)
     def post(self, request):
         serializer = JobSerializer(data=request.data)
 
@@ -76,7 +76,7 @@ class JobDetailView(APIView):
         serializer = JobSerializer(job)
         return Response(serializer.data)
 
-    @swagger_auto_schema(request_body=JobSerializer)
+    @swagger_auto_schema(tags=["Jobs"], request_body=JobSerializer)
     def put(self, request, pk):
         job = get_object_or_404(Job, pk=pk)
 
@@ -104,7 +104,7 @@ class JobDetailView(APIView):
 class ApplyJobView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(request_body=ProposalSerializer)
+    @swagger_auto_schema(tags=["Jobs"], request_body=ProposalSerializer)
     def post(self, request, job_id):
         job = get_object_or_404(Job, id=job_id)
 
@@ -155,6 +155,7 @@ class ProposalActionView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
+        tags=["Jobs"],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"action": openapi.Schema(type=openapi.TYPE_STRING)},
@@ -208,7 +209,7 @@ class ContractView(APIView):
 class SendMessageView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(request_body=MessageSerializer)
+    @swagger_auto_schema(tags=["Messages"], request_body=MessageSerializer)
     def post(self, request, contract_id):
         conversation = get_object_or_404(Conversation, contract_id=contract_id)
 
@@ -251,7 +252,7 @@ class MessageListView(APIView):
 class CreateReviewView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(request_body=ReviewSerializer)
+    @swagger_auto_schema(tags=["Reviews"], request_body=ReviewSerializer)
     def post(self, request, contract_id):
 
         contract = get_object_or_404(Contract, id=contract_id)
@@ -299,6 +300,7 @@ class ToggleFavoriteView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
+        tags=["Jobs"],
         request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={})
     )
     def post(self, request, pk):
@@ -374,7 +376,8 @@ class SavedCandidateView(APIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"freelancer": openapi.Schema(type=openapi.TYPE_INTEGER)},
-        )
+        ),
+        tags=["Jobs"],
     )
     def post(self, request):
         freelancer_id = request.data.get("freelancer")
@@ -431,8 +434,7 @@ class CategoryView(APIView):
         categories = Category.objects.all()
         return Response([{"id": c.id, "name": c.name} for c in categories])
 
-    @swagger_auto_schema(
-        request_body=openapi.Schema(
+    @swagger_auto_schema(tags=["Jobs"], request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"name": openapi.Schema(type=openapi.TYPE_STRING)},
         )
