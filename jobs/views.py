@@ -52,6 +52,8 @@ class JobView(APIView):
 
         return Response(serializer.errors, status=400)
 
+    @swagger_auto_schema(tags=["jobs"])
+
     def get(self, request):
         jobs = Job.objects.all().order_by("-created_at")
 
@@ -70,6 +72,8 @@ class JobView(APIView):
 
 class JobDetailView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(tags=["jobs"])
 
     def get(self, request, pk):
         job = get_object_or_404(Job, pk=pk)
@@ -90,7 +94,7 @@ class JobDetailView(APIView):
             return Response(serializer.data)
 
         return Response(serializer.errors, status=400)
-
+    @swagger_auto_schema(tags=["Jobs"])
     def delete(self, request, pk):
         job = get_object_or_404(Job, pk=pk)
 
@@ -126,7 +130,7 @@ class ApplyJobView(APIView):
 
 class AppliedJobsView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @swagger_auto_schema(tags=["Jobs"])
     def get(self, request):
         proposals = Proposal.objects.filter(freelancer=request.user)
 
@@ -140,6 +144,7 @@ class AppliedJobsView(APIView):
 class JobProposalsView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(tags=["Jobs"])
     def get(self, request, job_id):
         job = get_object_or_404(Job, id=job_id)
 
@@ -159,7 +164,7 @@ class ProposalActionView(APIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"action": openapi.Schema(type=openapi.TYPE_STRING)},
-        )
+        ),
     )
     def post(self, request, pk):
         proposal = get_object_or_404(Proposal, id=pk)
@@ -196,7 +201,7 @@ class ProposalActionView(APIView):
 
 class ContractView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @swagger_auto_schema(tags=["Contracts"])
     def get(self, request):
         contracts = Contract.objects.filter(
             models.Q(client=request.user) | models.Q(freelancer=request.user)
@@ -240,7 +245,7 @@ class SendMessageView(APIView):
 
 class MessageListView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @swagger_auto_schema(tags=["Messages"])
     def get(self, request, contract_id):
         conversation = get_object_or_404(Conversation, contract_id=contract_id)
 
@@ -279,7 +284,7 @@ class CreateReviewView(APIView):
 
 class DashboardView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @swagger_auto_schema(tags=["Dashboard"])
     def get(self, request):
         user = request.user
 
@@ -301,7 +306,7 @@ class ToggleFavoriteView(APIView):
 
     @swagger_auto_schema(
         tags=["Jobs"],
-        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={})
+        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={}),
     )
     def post(self, request, pk):
         user = request.user
@@ -319,7 +324,7 @@ class ToggleFavoriteView(APIView):
 
 class FavoriteJobsView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @swagger_auto_schema(tags=["Jobs"])
     def get(self, request):
         favorites = Favorite.objects.filter(user=request.user)
 
@@ -330,7 +335,7 @@ class FavoriteJobsView(APIView):
 
 class JobAlertView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @swagger_auto_schema(tags=["Jobs"])
     def get(self, request):
         alerts = JobAlert.objects.filter(user=request.user)
         return Response(
@@ -357,7 +362,7 @@ class JobAlertView(APIView):
 
 class SavedCandidateView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @swagger_auto_schema(tags=["Jobs"])
     def get(self, request):
         saved = SavedCandidate.objects.filter(client=request.user)
 
@@ -394,7 +399,7 @@ class SavedCandidateView(APIView):
 
 class JobApplicationsView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @swagger_auto_schema(tags=["Jobs"])
     def get(self, request, job_id):
         job = get_object_or_404(Job, id=job_id)
 
@@ -429,18 +434,20 @@ class JobApplicationsView(APIView):
 
 class CategoryView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @swagger_auto_schema(tags=["Jobs"])
     def get(self, request):
         categories = Category.objects.all()
         return Response([{"id": c.id, "name": c.name} for c in categories])
 
-    @swagger_auto_schema(tags=["Jobs"], request_body=openapi.Schema(
+    @swagger_auto_schema(
+        tags=["Jobs"],
+        request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"name": openapi.Schema(type=openapi.TYPE_STRING)},
-        )
+        ),
     )
     def post(self, request):
-        
+
         name = request.data.get("name")
 
         if not name:
