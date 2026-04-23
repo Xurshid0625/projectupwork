@@ -13,6 +13,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
 
+
 from .models import Education, Experience, Notification, Portfolio, Skill, UserSkill
 from .serializers import (
     EducationSerializer,
@@ -44,25 +45,49 @@ class RegisterView(APIView):
         if serializer.is_valid():
             user = serializer.save()
 
-            user.is_verified = True
-            user.save()
+            # ❗ BU QATOR BO‘LMASIN
+            # user.is_verified = True
 
-            refresh = RefreshToken.for_user(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+
+            verify_link = f"https://projectupwork-production.up.railway.app/api/verify-email/{uid}/{token}/"
+
+            send_mail(
+                subject="Verify your email",
+                message=f"Click this link: {verify_link}",
+                from_email="abdumannonovxurshid0625@gmail.com",
+                recipient_list=[user.email],
+            )
 
             return Response(
-                {
-                    "user": {
-                        "id": user.id,
-                        "email": user.email,
-                        "username": user.username,
-                    },
-                    "access": str(refresh.access_token),
-                    "refresh": str(refresh),
-                },
+                {"message": "User created. Check your email"},
                 status=201,
             )
 
         return Response(serializer.errors, status=400)
+
+
+from django.utils.http import urlsafe_base64_decode
+
+
+class VerifyEmailView(APIView):
+
+    @swagger_auto_schema(tags=["Auth"])
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except:
+            return Response({"error": "Invalid link"}, status=400)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({"error": "Invalid token"}, status=400)
+
+        user.is_verified = True
+        user.save()
+
+        return Response({"message": "Email verified successfully"})
 
 
 # class RegisterView(APIView):
