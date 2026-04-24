@@ -1,20 +1,31 @@
-import os
-from sib_api_v3_sdk import Configuration, ApiClient
-from sib_api_v3_sdk.api import transactional_emails_api
-from sib_api_v3_sdk.models import SendSmtpEmail
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
+from django.conf import settings
 
 
-def send_verify_email(email, verify_link):
-    configuration = Configuration()
-    configuration.api_key['api-key'] = os.getenv("BREVO_API_KEY")
+def send_verify_email(to_email, verify_link):
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = settings.BREVO_API_KEY
 
-    api_instance = transactional_emails_api.TransactionalEmailsApi(ApiClient(configuration))
-
-    send_smtp_email = SendSmtpEmail(
-        to=[{"email": email}],
-        sender={"email": "abdumannonovxurshid0625@gmail.com"},
-        subject="Verify your email",
-        html_content=f"<p>Click here: <a href='{verify_link}'>Verify</a></p>"
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+        sib_api_v3_sdk.ApiClient(configuration)
     )
 
-    api_instance.send_transac_email(send_smtp_email)
+    subject = "Email Verification"
+    html_content = f"""
+    <h2>Verify your account</h2>
+    <p>Click the link below:</p>
+    <a href="{verify_link}">{verify_link}</a>
+    """
+
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=[{"email": to_email}],
+        sender={"email": "abdumannonovxurshid0625@gmail.com"},  # 👈 shu sender
+        subject=subject,
+        html_content=html_content,
+    )
+
+    try:
+        api_instance.send_transac_email(send_smtp_email)
+    except ApiException as e:
+        print("Email error:", e)

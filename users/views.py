@@ -13,6 +13,8 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
 from .utils import send_verify_email
+from .models import User
+from .serializers import RegisterSerializer
 
 
 from .models import Education, Experience, Notification, Portfolio, Skill, UserSkill
@@ -46,11 +48,14 @@ class RegisterView(APIView):
         if serializer.is_valid():
             user = serializer.save()
 
+            # 🔑 UID + TOKEN
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
 
-            verify_link = f"https://projectupwork-production.up.railway.app/api/verify-email/{uid}/{token}/"
+            # 🔗 VERIFY LINK
+            verify_link = f"https://projectupwork-production.up.railway.app/api/users/verify-email/{uid}/{token}/"
 
+            # 📩 EMAIL
             try:
                 send_verify_email(user.email, verify_link)
             except Exception as e:
@@ -64,22 +69,23 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=400)
 
 
-from django.utils.http import urlsafe_base64_decode
-
-
+# ✅ VERIFY
 class VerifyEmailView(APIView):
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(tags=["Auth"])
     def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
-        except:
+        except Exception:
             return Response({"error": "Invalid link"}, status=400)
 
+        # 🔐 TOKEN CHECK
         if not default_token_generator.check_token(user, token):
-            return Response({"error": "Invalid token"}, status=400)
+            return Response({"error": "Invalid or expired token"}, status=400)
 
+        # ✅ VERIFY
         user.is_verified = True
         user.save()
 
