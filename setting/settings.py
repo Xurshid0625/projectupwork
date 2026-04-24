@@ -152,7 +152,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
