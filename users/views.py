@@ -46,18 +46,19 @@ class RegisterView(APIView):
         if serializer.is_valid():
             user = serializer.save()
 
-            # 🔑 UID + TOKEN
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-
-            # 🔗 VERIFY LINK
             verify_link = f"https://projectupwork-production.up.railway.app/api/users/verify-email/{uid}/{token}/"
 
-            # ❌ EMAILNI O‘CHIRDIK
-            # send_verify_email(user.email, verify_link)
+            refresh = RefreshToken.for_user(user)
 
             return Response(
-                {"message": "User created", "verify_link": verify_link},
+                {
+                    "message": "User created",
+                    "verify_link": verify_link,
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                },
                 status=201,
             )
 
