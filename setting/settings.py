@@ -24,19 +24,28 @@ SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key")
 
 DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "projectupwork-production.up.railway.app",
+    "localhost",
+    "127.0.0.1",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "https://projectupwork-production.up.railway.app",
+]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 AUTH_USER_MODEL = "users.User"
-CORS_ALLOW_ALL_ORIGINS = True
 
 CSRF_TRUSTED_ORIGINS = [
     "https://projectupwork-production.up.railway.app",
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "https://web-production-32f4e.up.railway.app",
-]
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
