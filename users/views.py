@@ -13,8 +13,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
 from .utils import send_verify_email
-from .models import User
-from .serializers import RegisterSerializer
 
 
 from .models import Education, Experience, Notification, Portfolio, Skill, UserSkill
@@ -55,21 +53,17 @@ class RegisterView(APIView):
             # 🔗 VERIFY LINK
             verify_link = f"https://projectupwork-production.up.railway.app/api/users/verify-email/{uid}/{token}/"
 
-            # 📩 EMAIL
-            try:
-                send_verify_email(user.email, verify_link)
-            except Exception as e:
-                print("EMAIL ERROR:", e)
+            # ❌ EMAILNI O‘CHIRDIK
+            # send_verify_email(user.email, verify_link)
 
             return Response(
-                {"message": "User created. Check your email"},
+                {"message": "User created", "verify_link": verify_link},
                 status=201,
             )
 
         return Response(serializer.errors, status=400)
 
 
-# ✅ VERIFY
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
 
@@ -81,11 +75,9 @@ class VerifyEmailView(APIView):
         except Exception:
             return Response({"error": "Invalid link"}, status=400)
 
-        # 🔐 TOKEN CHECK
         if not default_token_generator.check_token(user, token):
             return Response({"error": "Invalid or expired token"}, status=400)
 
-        # ✅ VERIFY
         user.is_verified = True
         user.save()
 
